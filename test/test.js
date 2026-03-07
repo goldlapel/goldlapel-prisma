@@ -148,6 +148,24 @@ describe('init', () => {
 
         assert.strictEqual(calls[0].opts.port, 9000)
     })
+
+    it('passes extraArgs to start', async () => {
+        process.env.DATABASE_URL = 'postgresql://user:pass@host:5432/mydb'
+        const { _start, calls } = mockStart('postgresql://user:pass@localhost:7932/mydb')
+
+        await init({ extraArgs: ['--verbose'], _start })
+
+        assert.deepStrictEqual(calls[0].opts.extraArgs, ['--verbose'])
+    })
+
+    it('sets DATABASE_URL even when using explicit url', async () => {
+        process.env.DATABASE_URL = 'postgresql://original@host:5432/db'
+        const { _start } = mockStart('postgresql://explicit@localhost:7932/db')
+
+        await init({ url: 'postgresql://explicit@host:5432/db', _start })
+
+        assert.strictEqual(process.env.DATABASE_URL, 'postgresql://explicit@localhost:7932/db')
+    })
 })
 
 
