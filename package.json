@@ -1,0 +1,32 @@
+{
+  "name": "goldlapel-prisma",
+  "version": "0.0.0",
+  "description": "Gold Lapel plugin for Prisma — automatic Postgres query optimization",
+  "type": "module",
+  "main": "index.js",
+  "exports": "./index.js",
+  "files": [
+    "index.js"
+  ],
+  "peerDependencies": {
+    "@prisma/client": ">=5.0.0",
+    "goldlapel": ">=0.1.0"
+  },
+  "scripts": {
+    "test": "node --test test/test.js"
+  },
+  "keywords": [
+    "postgres",
+    "prisma",
+    "optimization",
+    "goldlapel"
+  ],
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/goldlapel/goldlapel-prisma"
+  },
+  "devDependencies": {
+    "goldlapel": "file:../goldlapel-js"
+  }
+}
