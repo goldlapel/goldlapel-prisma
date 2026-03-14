@@ -42,7 +42,7 @@ describe('withGoldLapel', () => {
 
         assert.strictEqual(calls.length, 1)
         assert.strictEqual(calls[0].upstream, 'postgresql://user:pass@host:5432/mydb')
-        assert.deepStrictEqual(calls[0].opts, { port: undefined, extraArgs: undefined })
+        assert.deepStrictEqual(calls[0].opts, { config: undefined, port: undefined, extraArgs: undefined })
         assert(client instanceof MockPrismaClient)
         assert.strictEqual(client._opts.datasources.db.url, 'postgresql://user:pass@localhost:7932/mydb')
     })
@@ -87,6 +87,25 @@ describe('withGoldLapel', () => {
         })
 
         assert.deepStrictEqual(calls[0].opts.extraArgs, ['--verbose'])
+    })
+
+    it('passes config to start', async () => {
+        process.env.DATABASE_URL = 'postgresql://user:pass@host:5432/mydb'
+        const { _start, calls } = mockStart('postgresql://user:pass@localhost:7932/mydb')
+        const config = { mode: 'butler', poolSize: 30, disableN1: true }
+
+        await withGoldLapel({ config, _start, _PrismaClient: MockPrismaClient })
+
+        assert.deepStrictEqual(calls[0].opts.config, { mode: 'butler', poolSize: 30, disableN1: true })
+    })
+
+    it('omits config when not provided', async () => {
+        process.env.DATABASE_URL = 'postgresql://user:pass@host:5432/mydb'
+        const { _start, calls } = mockStart('postgresql://user:pass@localhost:7932/mydb')
+
+        await withGoldLapel({ _start, _PrismaClient: MockPrismaClient })
+
+        assert.strictEqual(calls[0].opts.config, undefined)
     })
 })
 
@@ -156,6 +175,25 @@ describe('init', () => {
         await init({ extraArgs: ['--verbose'], _start })
 
         assert.deepStrictEqual(calls[0].opts.extraArgs, ['--verbose'])
+    })
+
+    it('passes config to start', async () => {
+        process.env.DATABASE_URL = 'postgresql://user:pass@host:5432/mydb'
+        const { _start, calls } = mockStart('postgresql://user:pass@localhost:7932/mydb')
+        const config = { mode: 'butler', poolSize: 30, disableN1: true }
+
+        await init({ config, _start })
+
+        assert.deepStrictEqual(calls[0].opts.config, { mode: 'butler', poolSize: 30, disableN1: true })
+    })
+
+    it('omits config when not provided', async () => {
+        process.env.DATABASE_URL = 'postgresql://user:pass@host:5432/mydb'
+        const { _start, calls } = mockStart('postgresql://user:pass@localhost:7932/mydb')
+
+        await init({ _start })
+
+        assert.strictEqual(calls[0].opts.config, undefined)
     })
 
     it('sets DATABASE_URL even when using explicit url', async () => {
