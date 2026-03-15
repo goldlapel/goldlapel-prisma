@@ -45,6 +45,7 @@ describe('withGoldLapel', () => {
         assert.deepStrictEqual(calls[0].opts, { config: undefined, port: undefined, extraArgs: undefined })
         assert(client instanceof MockPrismaClient)
         assert.strictEqual(client._opts.datasources.db.url, 'postgresql://user:pass@localhost:7932/mydb')
+        assert.strictEqual(process.env.DATABASE_URL, 'postgresql://user:pass@localhost:7932/mydb')
     })
 
     it('uses explicit url over env', async () => {
@@ -58,6 +59,7 @@ describe('withGoldLapel', () => {
         })
 
         assert.strictEqual(calls[0].upstream, 'postgresql://explicit@host:5432/db')
+        assert.strictEqual(process.env.DATABASE_URL, 'postgresql://user:pass@localhost:7932/mydb')
     })
 
     it('throws when no DATABASE_URL', async () => {

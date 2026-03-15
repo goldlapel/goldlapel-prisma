@@ -5,6 +5,7 @@ export async function withGoldLapel(options = {}) {
     if (!url) throw new Error('Gold Lapel: DATABASE_URL not set. Pass { url } or set DATABASE_URL.')
     const startFn = options._start || start
     const proxy = await startFn(url, { config: options.config, port: options.port, extraArgs: options.extraArgs })
+    process.env.DATABASE_URL = proxy
     const PC = options._PrismaClient || (await import('@prisma/client')).PrismaClient
     return new PC({ datasources: { db: { url: proxy } } })
 }
