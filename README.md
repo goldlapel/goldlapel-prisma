@@ -1,6 +1,6 @@
 # goldlapel-prisma
 
-Gold Lapel plugin for [Prisma](https://www.prisma.io/) — automatic Postgres query optimization with one line of code.
+Gold Lapel plugin for [Prisma](https://www.prisma.io/) — automatic Postgres query optimization with one line of code. Includes L1 native cache — an in-process cache that serves repeated reads in microseconds with no TCP round-trip.
 
 ## Install
 
@@ -12,7 +12,7 @@ npm install goldlapel goldlapel-prisma
 
 ### Option A: `withGoldLapel()` (Prisma v5/v6)
 
-Returns a wired `PrismaClient` with the connection routed through Gold Lapel:
+Returns a wired `PrismaClient` with the connection routed through Gold Lapel and L1 native cache active:
 
 ```javascript
 import { withGoldLapel } from 'goldlapel-prisma'
