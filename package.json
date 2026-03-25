@@ -9,7 +9,7 @@
     "index.js"
   ],
   "peerDependencies": {
-    "@prisma/client": ">=5.0.0",
+    "@prisma/client": "^5.22.0",
     "goldlapel": ">=0.1.0"
   },
   "engines": {
@@ -25,7 +25,7 @@
     "goldlapel"
   ],
   "author": "Stephen Gibson",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "homepage": "https://goldlapel.com",
   "repository": {
     "type": "git",
@@ -33,5 +33,8 @@
   },
   "devDependencies": {
     "goldlapel": "file:../goldlapel-js"
+  },
+  "dependencies": {
+    "prisma": "^5.22.0"
   }
 }
