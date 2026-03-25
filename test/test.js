@@ -3,6 +3,8 @@ import assert from 'node:assert'
 
 import { withGoldLapel, init, cacheExtension, start, stop, proxyUrl, GoldLapel, NativeCache } from '../index.js'
 
+const origGoldlapelClient = process.env.GOLDLAPEL_CLIENT
+
 function mockStart(returnUrl) {
     const calls = []
     async function _start(upstream, opts) {
@@ -37,6 +39,7 @@ describe('withGoldLapel', () => {
 
     beforeEach(() => {
         delete process.env.DATABASE_URL
+        delete process.env.GOLDLAPEL_CLIENT
         NativeCache._reset()
     })
 
@@ -45,6 +48,11 @@ describe('withGoldLapel', () => {
             process.env.DATABASE_URL = origUrl
         } else {
             delete process.env.DATABASE_URL
+        }
+        if (origGoldlapelClient !== undefined) {
+            process.env.GOLDLAPEL_CLIENT = origGoldlapelClient
+        } else {
+            delete process.env.GOLDLAPEL_CLIENT
         }
         NativeCache._reset()
     })
@@ -160,6 +168,38 @@ describe('withGoldLapel', () => {
         })
 
         assert.strictEqual(client._extensions.length, 1)
+    })
+
+    it('builds tableMap from DMMF when provided', async () => {
+        process.env.DATABASE_URL = 'postgresql://user:pass@host:5432/mydb'
+        const { _start } = mockStart('postgresql://user:pass@localhost:7932/mydb')
+
+        const dmmf = {
+            datamodel: {
+                models: [
+                    { name: 'User', dbName: null },
+                    { name: 'BlogPost', dbName: 'blog_posts' },
+                ],
+            },
+        }
+
+        const client = await withGoldLapel({
+            _start,
+            _PrismaClient: MockPrismaClient,
+            _dmmf: dmmf,
+        })
+
+        assert.strictEqual(client._extensions.length, 1)
+        assert.strictEqual(client._extensions[0].name, 'goldlapel-cache')
+    })
+
+    it('sets GOLDLAPEL_CLIENT env var', async () => {
+        process.env.DATABASE_URL = 'postgresql://user:pass@host:5432/mydb'
+        const { _start } = mockStart('postgresql://user:pass@localhost:7932/mydb')
+
+        await withGoldLapel({ _start, _PrismaClient: MockPrismaClient })
+
+        assert.strictEqual(process.env.GOLDLAPEL_CLIENT, 'prisma')
     })
 })
 
@@ -719,6 +759,119 @@ describe('cacheExtension', () => {
         const ext = cacheExtension({ _cache: cache })
         // Should work without specifying a port
         assert.strictEqual(ext.name, 'goldlapel-cache')
+    })
+
+    it('does not store rows or fields in cache entries', async () => {
+        const cache = mockCache()
+        const ext = cacheExtension({ _cache: cache })
+
+        const query = async () => [{ id: 1 }]
+
+        await ext.query.$allOperations({
+            model: 'User',
+            operation: 'findMany',
+            args: {},
+            query,
+        })
+
+        // Inspect the cache entry — should only have result and tables
+        const entries = [...cache._cache.values()]
+        assert.strictEqual(entries.length, 1)
+        assert.ok('result' in entries[0])
+        assert.ok('tables' in entries[0])
+        assert.strictEqual('rows' in entries[0], false, 'rows should not be stored')
+        assert.strictEqual('fields' in entries[0], false, 'fields should not be stored')
+    })
+
+    it('resolves @@map() table names via tableMap', async () => {
+        const cache = mockCache()
+        // Simulate DMMF: model "UserProfile" maps to table "user_profiles"
+        const tableMap = new Map([['UserProfile', 'user_profiles']])
+        const ext = cacheExtension({ _cache: cache, _tableMap: tableMap })
+
+        let readCount = 0
+        const readQuery = async () => { readCount++; return [] }
+        const writeQuery = async () => ({})
+
+        // Read with model name
+        await ext.query.$allOperations({
+            model: 'UserProfile',
+            operation: 'findMany',
+            args: {},
+            query: readQuery,
+        })
+        assert.strictEqual(readCount, 1)
+
+        // Write with same model — should invalidate using mapped table name
+        await ext.query.$allOperations({
+            model: 'UserProfile',
+            operation: 'create',
+            args: {},
+            query: writeQuery,
+        })
+
+        // Read should miss cache since we invalidated the correct table
+        await ext.query.$allOperations({
+            model: 'UserProfile',
+            operation: 'findMany',
+            args: {},
+            query: readQuery,
+        })
+        assert.strictEqual(readCount, 2, 'cache should be invalidated via mapped table name')
+    })
+
+    it('falls back to lowercase model name when no tableMap entry', async () => {
+        const cache = mockCache()
+        const tableMap = new Map([['OtherModel', 'other_table']])
+        const ext = cacheExtension({ _cache: cache, _tableMap: tableMap })
+
+        let readCount = 0
+        const query = async () => { readCount++; return [] }
+
+        await ext.query.$allOperations({
+            model: 'User',
+            operation: 'findMany',
+            args: {},
+            query,
+        })
+        await ext.query.$allOperations({
+            model: 'User',
+            operation: 'findMany',
+            args: {},
+            query,
+        })
+
+        assert.strictEqual(readCount, 1, 'second call should hit cache')
+    })
+
+    it('invalidation uses mapped table name for server-side signals', async () => {
+        const cache = mockCache()
+        const tableMap = new Map([['Account', 'accounts_v2']])
+        const ext = cacheExtension({ _cache: cache, _tableMap: tableMap })
+
+        let callCount = 0
+        const query = async () => { callCount++; return [{ id: 1 }] }
+
+        // Populate cache
+        await ext.query.$allOperations({
+            model: 'Account',
+            operation: 'findMany',
+            args: {},
+            query,
+        })
+        assert.strictEqual(callCount, 1)
+
+        // Simulate server-side invalidation using the ACTUAL table name
+        cache.invalidateTable('accounts_v2')
+
+        // Should miss cache since the table name matches the mapped name
+        await ext.query.$allOperations({
+            model: 'Account',
+            operation: 'findMany',
+            args: {},
+            query,
+        })
+        assert.strictEqual(callCount, 2, 'should re-fetch after invalidation of mapped table name')
     })
 })
 

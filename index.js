@@ -20,10 +20,24 @@ function makeKey(model, operation, args) {
     }
 }
 
-// Note: @@map() table name mappings are not detected. The proxy's L2
-// invalidation still catches all writes regardless of naming. L1 may serve
-// stale data for tables using @@map() until the next proxy-level invalidation.
-function modelToTable(model) {
+// Build a mapping from Prisma model names to actual database table names
+// using Prisma's DMMF (data model meta format). When @@map() is used, the
+// model name differs from the table name — this resolves that mapping.
+function buildTableMap(dmmf) {
+    const map = new Map()
+    if (!dmmf?.datamodel?.models) return map
+    for (const model of dmmf.datamodel.models) {
+        // model.dbName is the @@map() value, null if no mapping
+        const tableName = (model.dbName || model.name).toLowerCase()
+        map.set(model.name, tableName)
+    }
+    return map
+}
+
+function modelToTable(model, tableMap) {
+    if (tableMap && tableMap.has(model)) {
+        return tableMap.get(model)
+    }
     return model.toLowerCase()
 }
 
@@ -34,13 +48,15 @@ export function cacheExtension(options = {}) {
         cache.connectInvalidation(port)
     }
 
+    const tableMap = options._tableMap || null
+
     return {
         name: 'goldlapel-cache',
         query: {
             $allOperations({ model, operation, args, query }) {
                 if (!model) return query(args)
 
-                const table = modelToTable(model)
+                const table = modelToTable(model, tableMap)
 
                 if (WRITE_OPS.has(operation)) {
                     cache.invalidateTable(table)
@@ -69,7 +85,7 @@ export function cacheExtension(options = {}) {
                             cache._evictOne()
                         }
                         const tables = new Set([table])
-                        cache._cache.set(key, { result, rows: [result], fields: [], tables })
+                        cache._cache.set(key, { result, tables })
                         let keys = cache._tableIndex.get(table)
                         if (!keys) {
                             keys = new Set()
@@ -89,18 +105,38 @@ export async function withGoldLapel(options = {}) {
     if (!url) throw new Error('Gold Lapel: DATABASE_URL not set. Pass { url } or set DATABASE_URL.')
     process.env.GOLDLAPEL_CLIENT = 'prisma'
     const startFn = options._start || start
-    const proxy = await startFn(url, { config: options.config, port: options.port, extraArgs: options.extraArgs })
-    process.env.DATABASE_URL = proxy
+    const result = await startFn(url, { config: options.config, port: options.port, extraArgs: options.extraArgs })
+
+    // start() may return a wrapped client or a URL string
+    const proxyUrlStr = typeof result === 'string' ? result : proxyUrl()
+    process.env.DATABASE_URL = proxyUrlStr
 
     const proxyPort = options.port ?? DEFAULT_PORT
     const invPort = options.config?.invalidationPort ?? (proxyPort + 2)
 
     const PC = options._PrismaClient || (await import('@prisma/client')).PrismaClient
+
+    // Build @@map() table name mapping from Prisma DMMF if available
+    let tableMap = null
+    if (options._dmmf) {
+        tableMap = buildTableMap(options._dmmf)
+    } else {
+        try {
+            const { Prisma } = await import('@prisma/client')
+            if (Prisma?.dmmf) {
+                tableMap = buildTableMap(Prisma.dmmf)
+            }
+        } catch {
+            // DMMF not available — fall back to lowercase model names
+        }
+    }
+
     const ext = cacheExtension({
         invalidationPort: invPort,
+        _tableMap: tableMap,
         ...options._cacheOptions,
     })
-    return new PC({ datasources: { db: { url: proxy } } }).$extends(ext)
+    return new PC({ datasources: { db: { url: proxyUrlStr } } }).$extends(ext)
 }
 
 export async function init(options = {}) {
@@ -108,9 +144,10 @@ export async function init(options = {}) {
     if (!url) throw new Error('Gold Lapel: DATABASE_URL not set. Pass { url } or set DATABASE_URL.')
     process.env.GOLDLAPEL_CLIENT = 'prisma'
     const startFn = options._start || start
-    const proxy = await startFn(url, { config: options.config, port: options.port, extraArgs: options.extraArgs })
-    process.env.DATABASE_URL = proxy
-    return proxy
+    const result = await startFn(url, { config: options.config, port: options.port, extraArgs: options.extraArgs })
+    const proxyUrlStr = typeof result === 'string' ? result : proxyUrl()
+    process.env.DATABASE_URL = proxyUrlStr
+    return proxyUrlStr
 }
 
 export { start, stop, proxyUrl, GoldLapel, NativeCache }
