@@ -20,6 +20,9 @@ function makeKey(model, operation, args) {
     }
 }
 
+// Note: @@map() table name mappings are not detected. The proxy's L2
+// invalidation still catches all writes regardless of naming. L1 may serve
+// stale data for tables using @@map() until the next proxy-level invalidation.
 function modelToTable(model) {
     return model.toLowerCase()
 }
