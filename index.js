@@ -103,7 +103,7 @@ export function cacheExtension(options = {}) {
 export async function withGoldLapel(options = {}) {
     const url = options.url || process.env.DATABASE_URL
     if (!url) throw new Error('Gold Lapel: DATABASE_URL not set. Pass { url } or set DATABASE_URL.')
-    process.env.GOLDLAPEL_CLIENT = 'prisma'
+    if (!process.env.GOLDLAPEL_CLIENT) process.env.GOLDLAPEL_CLIENT = 'prisma'
     const startFn = options._start || start
     const result = await startFn(url, { config: options.config, port: options.port, extraArgs: options.extraArgs })
 
@@ -142,7 +142,7 @@ export async function withGoldLapel(options = {}) {
 export async function init(options = {}) {
     const url = options.url || process.env.DATABASE_URL
     if (!url) throw new Error('Gold Lapel: DATABASE_URL not set. Pass { url } or set DATABASE_URL.')
-    process.env.GOLDLAPEL_CLIENT = 'prisma'
+    if (!process.env.GOLDLAPEL_CLIENT) process.env.GOLDLAPEL_CLIENT = 'prisma'
     const startFn = options._start || start
     const result = await startFn(url, { config: options.config, port: options.port, extraArgs: options.extraArgs })
     const proxyUrlStr = typeof result === 'string' ? result : proxyUrl()
