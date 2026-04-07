@@ -84,7 +84,7 @@ Both `withGoldLapel()` and `init()` accept an options object:
 const prisma = await withGoldLapel({
   url: 'postgresql://user:pass@host:5432/mydb',
   port: 9000,
-  config: { mode: 'butler', poolSize: 30, disableN1: true },
+  config: { mode: 'waiter', poolSize: 30, disableN1: true },
 })
 ```
 

@@ -117,11 +117,11 @@ describe('withGoldLapel', () => {
     it('passes config to start', async () => {
         process.env.DATABASE_URL = 'postgresql://user:pass@host:5432/mydb'
         const { _start, calls } = mockStart('postgresql://user:pass@localhost:7932/mydb')
-        const config = { mode: 'butler', poolSize: 30, disableN1: true }
+        const config = { mode: 'waiter', poolSize: 30, disableN1: true }
 
         await withGoldLapel({ config, _start, _PrismaClient: MockPrismaClient })
 
-        assert.deepStrictEqual(calls[0].opts.config, { mode: 'butler', poolSize: 30, disableN1: true })
+        assert.deepStrictEqual(calls[0].opts.config, { mode: 'waiter', poolSize: 30, disableN1: true })
     })
 
     it('omits config when not provided', async () => {
@@ -274,11 +274,11 @@ describe('init', () => {
     it('passes config to start', async () => {
         process.env.DATABASE_URL = 'postgresql://user:pass@host:5432/mydb'
         const { _start, calls } = mockStart('postgresql://user:pass@localhost:7932/mydb')
-        const config = { mode: 'butler', poolSize: 30, disableN1: true }
+        const config = { mode: 'waiter', poolSize: 30, disableN1: true }
 
         await init({ config, _start })
 
-        assert.deepStrictEqual(calls[0].opts.config, { mode: 'butler', poolSize: 30, disableN1: true })
+        assert.deepStrictEqual(calls[0].opts.config, { mode: 'waiter', poolSize: 30, disableN1: true })
     })
 
     it('omits config when not provided', async () => {
