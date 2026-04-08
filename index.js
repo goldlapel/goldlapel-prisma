@@ -154,5 +154,5 @@ export {
     start, stop, proxyUrl, GoldLapel, NativeCache,
     docInsert, docInsertMany, docFind, docFindOne,
     docUpdate, docUpdateOne, docDelete, docDeleteOne,
-    docCount, docCreateIndex,
+    docCount, docCreateIndex, docAggregate,
 } from 'goldlapel'
