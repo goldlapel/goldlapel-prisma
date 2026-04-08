@@ -150,4 +150,9 @@ export async function init(options = {}) {
     return proxyUrlStr
 }
 
-export { start, stop, proxyUrl, GoldLapel, NativeCache }
+export {
+    start, stop, proxyUrl, GoldLapel, NativeCache,
+    docInsert, docInsertMany, docFind, docFindOne,
+    docUpdate, docUpdateOne, docDelete, docDeleteOne,
+    docCount, docCreateIndex,
+} from 'goldlapel'
