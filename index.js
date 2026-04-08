@@ -155,4 +155,6 @@ export {
     docInsert, docInsertMany, docFind, docFindOne,
     docUpdate, docUpdateOne, docDelete, docDeleteOne,
     docCount, docCreateIndex, docAggregate,
+    docWatch, docUnwatch, docCreateTtlIndex, docRemoveTtlIndex,
+    docCreateCapped, docRemoveCap,
 } from 'goldlapel'
