@@ -1,4 +1,4 @@
-import { start, stop, proxyUrl, GoldLapel, NativeCache } from 'goldlapel'
+import { start, stop, proxyUrl, GoldLapel, NativeCache } from '@goldlapel/goldlapel'
 
 const DEFAULT_PORT = 7932
 const READ_OPS = new Set([
@@ -157,4 +157,4 @@ export {
     docCount, docCreateIndex, docAggregate,
     docWatch, docUnwatch, docCreateTtlIndex, docRemoveTtlIndex,
     docCreateCapped, docRemoveCap,
-} from 'goldlapel'
+} from '@goldlapel/goldlapel'

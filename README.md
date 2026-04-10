@@ -1,11 +1,11 @@
-# goldlapel-prisma
+# @goldlapel/prisma
 
 Gold Lapel plugin for [Prisma](https://www.prisma.io/) — automatic Postgres query optimization with one line of code. Includes L1 native cache — an in-process cache that serves repeated reads in microseconds with no TCP round-trip.
 
 ## Install
 
 ```bash
-npm install goldlapel goldlapel-prisma
+npm install @goldlapel/goldlapel @goldlapel/prisma
 ```
 
 ## Quick start
@@ -15,7 +15,7 @@ npm install goldlapel goldlapel-prisma
 Returns a wired `PrismaClient` with the connection routed through Gold Lapel and L1 native cache active:
 
 ```javascript
-import { withGoldLapel } from 'goldlapel-prisma'
+import { withGoldLapel } from '@goldlapel/prisma'
 
 const prisma = await withGoldLapel()
 
@@ -29,7 +29,7 @@ const cached = await prisma.user.findMany()
 `init()` rewrites `DATABASE_URL` to point at the proxy. Pair with `cacheExtension()` for L1 cache — works with Prisma v5, v6, and v7+:
 
 ```javascript
-import { init, cacheExtension } from 'goldlapel-prisma'
+import { init, cacheExtension } from '@goldlapel/prisma'
 
 await init()
 
@@ -42,7 +42,7 @@ const prisma = new PrismaClient().$extends(cacheExtension())
 If you only want the proxy optimization without the in-process cache:
 
 ```javascript
-import { init } from 'goldlapel-prisma'
+import { init } from '@goldlapel/prisma'
 
 await init()
 
@@ -90,8 +90,8 @@ const prisma = await withGoldLapel({
 
 ## Re-exports
 
-For convenience, `goldlapel-prisma` re-exports from `goldlapel`:
+For convenience, `@goldlapel/prisma` re-exports from `@goldlapel/goldlapel`:
 
 ```javascript
-import { start, stop, proxyUrl, GoldLapel, NativeCache } from 'goldlapel-prisma'
+import { start, stop, proxyUrl, GoldLapel, NativeCache } from '@goldlapel/prisma'
 ```
